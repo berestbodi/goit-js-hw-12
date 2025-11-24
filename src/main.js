@@ -27,7 +27,13 @@ async function onFormSubmit(event) {
 
   currentQuery = event.target.elements['search-text'].value.trim();
 
-  if (!currentQuery) return;
+  if (!currentQuery) {
+    iziToast.warning({
+      title: 'Please enter a search query.',
+      position: 'topRight',
+    });
+    return;
+  }
 
   currentPage = 1;
   clearGallery();
