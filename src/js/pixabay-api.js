@@ -1,15 +1,17 @@
-// getImagesByQuery(query). Ця функція повинна приймати один параметр query (пошукове слово, яке є рядком), здійснювати HTTP-запит і повертати значення властивості data з отриманої відповіді.
 import axios from 'axios';
 
-export default async function getImagesByQuery(query) {
-  const BASE_URL = 'https://pixabay.com/api/';
+const BASE_URL = 'https://pixabay.com/api/';
+const API_KEY = '53337460-da8d4afc1a3151b07a1e25c69';
 
+export default async function getImagesByQuery(query, page = 1) {
   const params = {
-    key: '53337460-da8d4afc1a3151b07a1e25c69',
+    key: API_KEY,
     q: query,
     image_type: 'photo',
     orientation: 'horizontal',
     safesearch: true,
+    per_page: 15,
+    page,
   };
 
   const response = await axios.get(BASE_URL, { params });
