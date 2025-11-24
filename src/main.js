@@ -7,12 +7,12 @@ import {
   clearGallery,
   showLoader,
   hideLoader,
-  smoothScroll,
+  showLoadMore,
+  hideLoadMore,
 } from './js/render-functions';
 
 const form = document.querySelector('.form');
 const loadMoreBtn = document.querySelector('.load-more');
-const loadMoreWrapper = document.querySelector('.load-more-wrapper');
 
 let currentQuery = '';
 let currentPage = 1;
@@ -25,46 +25,54 @@ loadMoreBtn.addEventListener('click', onLoadMore);
 async function onFormSubmit(event) {
   event.preventDefault();
 
-  clearGallery();
-  loadMoreWrapper.classList.add('hidden');
-
   currentQuery = event.target.elements['search-text'].value.trim();
-  currentPage = 1;
 
   if (!currentQuery) return;
 
-  await fetchImages(false);
+  currentPage = 1;
+  clearGallery();
+  hideLoadMore();
+  await fetchImages({ isLoadMore: false });
 }
 
 async function onLoadMore() {
+  if (currentPage >= totalPages) return;
+
   currentPage += 1;
-  await fetchImages(true);
+  await fetchImages({ isLoadMore: true });
 }
 
-async function fetchImages(isLoadMore = false) {
+async function fetchImages({ isLoadMore = false } = {}) {
   showLoader();
 
   try {
     const data = await getImagesByQuery(currentQuery, currentPage, perPage);
 
-    hideLoader();
-
-    if (data.hits.length === 0) {
-      iziToast.error({
-        title: 'Sorry, no images found. Try again!',
-        position: 'topRight',
-      });
-      return;
+    if (!data || !Array.isArray(data.hits) || data.hits.length === 0) {
+      if (currentPage === 1) {
+        iziToast.error({
+          title: 'Sorry, no images found. Try a different query!',
+          position: 'topRight',
+        });
+        hideLoadMore();
+        return;
+      } else {
+        hideLoadMore();
+        iziToast.info({
+          title: "We're sorry, but you've reached the end of search results.",
+          position: 'topRight',
+        });
+        return;
+      }
     }
-
     createGallery(data.hits);
-
-    totalPages = Math.ceil(data.totalHits / perPage);
+    const totalHits = Number.isFinite(data.totalHits) ? data.totalHits : 0;
+    totalPages = Math.ceil(totalHits / perPage) || 0;
 
     if (currentPage < totalPages) {
-      loadMoreWrapper.classList.remove('hidden');
+      showLoadMore();
     } else {
-      loadMoreWrapper.classList.add('hidden');
+      hideLoadMore();
       if (currentPage !== 1) {
         iziToast.info({
           title: "We're sorry, but you've reached the end of search results.",
@@ -73,13 +81,27 @@ async function fetchImages(isLoadMore = false) {
       }
     }
 
-    if (isLoadMore) smoothScroll();
+    if (isLoadMore) {
+      doSmoothScroll();
+    }
   } catch (error) {
-    hideLoader();
     console.error(error);
     iziToast.error({
       title: 'Error loading images',
       position: 'topRight',
     });
+  } finally {
+    hideLoader();
   }
+}
+
+function doSmoothScroll() {
+  const firstItem = document.querySelector('.gallery-item');
+  if (!firstItem) return;
+
+  const cardHeight = firstItem.getBoundingClientRect().height;
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
 }
