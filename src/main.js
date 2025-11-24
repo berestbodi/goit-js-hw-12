@@ -52,7 +52,6 @@ async function fetchImages(isLoadMore = false) {
       });
       return;
     }
-
     createGallery(data.hits);
     hideLoader();
 
