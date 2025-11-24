@@ -49,3 +49,14 @@ export function showLoader() {
 export function hideLoader() {
   loader.classList.remove('active');
 }
+
+export function smoothScroll() {
+  const firstCard = document
+    .querySelector('.gallery-item')
+    .getBoundingClientRect().height;
+
+  window.scrollBy({
+    top: firstCard * 2,
+    behavior: 'smooth',
+  });
+}

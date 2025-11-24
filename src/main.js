@@ -7,6 +7,7 @@ import {
   clearGallery,
   showLoader,
   hideLoader,
+  smoothScroll,
 } from './js/render-functions';
 
 const form = document.querySelector('.form');
@@ -15,6 +16,7 @@ const loadMoreWrapper = document.querySelector('.load-more-wrapper');
 
 let currentQuery = '';
 let currentPage = 1;
+const perPage = 15;
 let totalPages = 0;
 
 form.addEventListener('submit', onFormSubmit);
@@ -22,6 +24,7 @@ loadMoreBtn.addEventListener('click', onLoadMore);
 
 async function onFormSubmit(event) {
   event.preventDefault();
+
   clearGallery();
   loadMoreWrapper.classList.add('hidden');
 
@@ -30,7 +33,7 @@ async function onFormSubmit(event) {
 
   if (!currentQuery) return;
 
-  await fetchImages();
+  await fetchImages(false);
 }
 
 async function onLoadMore() {
@@ -42,29 +45,32 @@ async function fetchImages(isLoadMore = false) {
   showLoader();
 
   try {
-    const data = await getImagesByQuery(currentQuery, currentPage);
+    const data = await getImagesByQuery(currentQuery, currentPage, perPage);
+
+    hideLoader();
 
     if (data.hits.length === 0) {
-      hideLoader();
       iziToast.error({
         title: 'Sorry, no images found. Try again!',
         position: 'topRight',
       });
       return;
     }
-    createGallery(data.hits);
-    hideLoader();
 
-    totalPages = Math.ceil(data.totalHits / 15);
+    createGallery(data.hits);
+
+    totalPages = Math.ceil(data.totalHits / perPage);
 
     if (currentPage < totalPages) {
       loadMoreWrapper.classList.remove('hidden');
     } else {
       loadMoreWrapper.classList.add('hidden');
-      iziToast.info({
-        title: "We're sorry, but you've reached the end of search results.",
-        position: 'topRight',
-      });
+      if (currentPage !== 1) {
+        iziToast.info({
+          title: "We're sorry, but you've reached the end of search results.",
+          position: 'topRight',
+        });
+      }
     }
 
     if (isLoadMore) smoothScroll();
@@ -76,15 +82,4 @@ async function fetchImages(isLoadMore = false) {
       position: 'topRight',
     });
   }
-}
-
-function smoothScroll() {
-  const firstCard = document
-    .querySelector('.gallery-item')
-    .getBoundingClientRect().height;
-
-  window.scrollBy({
-    top: firstCard * 2,
-    behavior: 'smooth',
-  });
 }
